@@ -11,7 +11,7 @@ export default function CampaignView() {
 
   const fetchCampaign = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/campaigns/${id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/campaigns/${id}`);
       if (res.ok) {
         const result = await res.json();
         setData(result);
@@ -28,7 +28,7 @@ export default function CampaignView() {
     try {
       setLoading(true);
       // Wait for UI loading state to flush before blocking
-      const res = await fetch(`http://127.0.0.1:8000/api/campaigns/${id}/send`, { method: 'POST' });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/campaigns/${id}/send`, { method: 'POST' });
       if (res.ok) {
         const result = await res.json();
         alert(`Finished: Sent ${result.results?.success || 0} emails.`);
@@ -48,7 +48,7 @@ export default function CampaignView() {
     if (!confirm("This will skip the 3-5 day waiting safety mechanism and instantly send Follow-up AI emails to anyone ready. Continue?")) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://127.0.0.1:8000/api/campaigns/${id}/force_sequence`, { method: 'POST' });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/campaigns/${id}/force_sequence`, { method: 'POST' });
       if (res.ok) {
         const result = await res.json();
         alert(`Finished: Sent ${result.results?.advanced || 0} follow-up sequences. Errors: ${result.results?.errors || 0}`);
@@ -66,7 +66,7 @@ export default function CampaignView() {
 
   const handleMarkReplied = async (leadId: number) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/leads/${leadId}/replied`, { method: 'POST' });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/leads/${leadId}/replied`, { method: 'POST' });
       if (res.ok) fetchCampaign();
     } catch(e) { console.error(e); }
   };
@@ -108,7 +108,7 @@ export default function CampaignView() {
         )}
         {!isPolling && leads.length > 0 && (
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn" onClick={() => window.open(`http://127.0.0.1:8000/api/campaigns/${id}/export`, '_blank')} style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
+            <button className="btn" onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/campaigns/${id}/export`, '_blank')} style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
                 📥 Download CSV
             </button>
             <button className="btn" onClick={handleSendBlast} style={{ background: 'var(--success-color)' }}>

@@ -12,7 +12,7 @@ export default function NewCampaign() {
   const [personaId, setPersonaId] = useState<number | ''>('');
 
   useEffect(() => {
-     fetch('http://127.0.0.1:8000/api/personas')
+     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/personas`)
       .then(r => r.json())
       .then(d => {
          setPersonas(d);
@@ -26,7 +26,7 @@ export default function NewCampaign() {
     setLoading(true);
     
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/campaigns', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/campaigns`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

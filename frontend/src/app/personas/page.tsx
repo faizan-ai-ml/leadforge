@@ -13,7 +13,7 @@ export default function PersonasPage() {
 
     const fetchPersonas = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/personas');
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/personas`);
             const data = await res.json();
             setPersonas(data);
         } catch (e) { console.error(e); }
@@ -26,7 +26,7 @@ export default function PersonasPage() {
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch('http://localhost:8000/api/personas', {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/personas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, objective, skills, resume_text: resumeText, value_proposition: valueProp })
