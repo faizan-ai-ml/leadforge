@@ -1,0 +1,25 @@
+# LeadForge SaaS Configuration
+
+# Scraping Settings
+max_leads_per_run: 50
+delay_between_requests_min: 0.5
+delay_between_requests_max: 1.5
+screenshot_enabled: true
+
+# Proxy Resilience
+use_proxies: false
+proxy_strategy: "round_robin" # "sticky", "random", "round_robin"
+
+# AI Provider Settings
+llm_provider: "groq"  # options: "groq", "ollama"
+groq_model: "llama-3.1-8b-instant"
+ollama_model: "llama3"
+email_max_sentences: 5
+
+# Directories
+output_folder: "output/"
+log_folder: "logs/"
+screenshot_folder: "screenshots/"
+
+# Database Setting
+db_type: "postgresql"  # options: "sqlite", "postgresql"

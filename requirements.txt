@@ -1,0 +1,17 @@
+playwright==1.42.0
+beautifulsoup4==4.12.3
+requests==2.31.0
+groq
+SQLAlchemy==2.0.28
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+fastapi
+uvicorn
+pydantic
+PyYAML==6.0.1
+pandas==2.2.1
+fake-useragent==1.5.0
+Pillow==10.2.0
+loguru==0.7.2
+playwright-stealth
+curl_cffi>=0.5.10
