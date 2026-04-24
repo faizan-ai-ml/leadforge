@@ -4,6 +4,13 @@ from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
+class APIKeys(Base):
+    __tablename__ = "api_keys"
+    id = Column(Integer, primary_key=True, index=True)
+    hunter_api_key = Column(String, default="")
+    apollo_api_key = Column(String, default="")
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
 class UserPersona(Base):
     __tablename__ = "personas"
     

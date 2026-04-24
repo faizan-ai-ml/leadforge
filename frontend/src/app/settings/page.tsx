@@ -9,6 +9,9 @@ export default function SettingsPage() {
     const [password, setPassword] = useState('');
     const [status, setStatus] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    
+    const [hunterKey, setHunterKey] = useState('');
+    const [apiStatus, setApiStatus] = useState('');
 
     useEffect(() => {
         // Fetch existing config
@@ -21,6 +24,13 @@ export default function SettingsPage() {
                 if (data.password) setPassword(data.password);
             })
             .catch(err => console.error("Could not fetch SMTP settings", err));
+            
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/settings/keys`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.hunter_api_key) setHunterKey(data.hunter_api_key);
+            })
+            .catch(err => console.error("Could not fetch API keys", err));
     }, []);
 
     const handleSave = async (e: React.FormEvent) => {
@@ -42,6 +52,22 @@ export default function SettingsPage() {
             setStatus('Error saving settings.');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleSaveKeys = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setApiStatus('Saving...');
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/api/settings/keys`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hunter_api_key: hunterKey })
+            });
+            if (res.ok) setApiStatus('API Keys saved!');
+            setTimeout(() => setApiStatus(''), 3000);
+        } catch (e) {
+            setApiStatus('Error saving keys.');
         }
     };
 
@@ -103,6 +129,31 @@ export default function SettingsPage() {
                         {isLoading ? 'Saving...' : 'Save Configuration'}
                     </button>
                     {status && <p style={{ marginTop: '1rem', color: status.includes('Error') ? 'red' : 'green', textAlign: 'center', fontWeight: 'bold' }}>{status}</p>}
+                </div>
+            </form>
+
+            <h2 style={{ marginTop: '3rem' }}>Data Enrichment Integrations</h2>
+            <p style={{ color: '#666', marginBottom: '2rem' }}>
+                Enter your Hunter.io API key here. The AI will use this to automatically bypass generic (info@) emails and locate the specific founders/CEO and HR managers needed for your B2B / Job Hunting persona.
+            </p>
+
+            <form onSubmit={handleSaveKeys} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Hunter.io API Key</label>
+                    <input 
+                        type="password" 
+                        value={hunterKey} 
+                        onChange={e => setHunterKey(e.target.value)} 
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #ccc' }}
+                        placeholder="Secret API Key"
+                    />
+                </div>
+
+                <div style={{ marginTop: '1rem' }}>
+                    <button type="submit" className="btn" style={{ width: '100%', fontSize: '1rem', background: '#3b82f6' }}>
+                        Save Enrichment Keys
+                    </button>
+                    {apiStatus && <p style={{ marginTop: '1rem', color: apiStatus.includes('Error') ? 'red' : 'green', textAlign: 'center', fontWeight: 'bold' }}>{apiStatus}</p>}
                 </div>
             </form>
         </div>

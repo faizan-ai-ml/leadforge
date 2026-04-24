@@ -55,10 +55,13 @@ INTRO_STYLES = [
     "Hey {name},"
 ]
 
-def generate_cold_email(business_name: str, weaknesses_summary: str, persona=None) -> Tuple[str, str]:
+def generate_cold_email(business_name: str, weaknesses_summary: str, persona=None, provided_first_name=None) -> Tuple[str, str]:
     """Generates an email using Groq with Ollama fallback, utilizing prompt rotation and Persona context."""
     
-    first_name = business_name.split()[0].replace(",", "").replace(".", "") if business_name else "there"
+    if provided_first_name:
+         first_name = provided_first_name
+    else:
+         first_name = business_name.split()[0].replace(",", "").replace(".", "") if business_name else "there"
     
     if persona and persona.objective == "job_hunt":
         angle_name = "Career Alignment Pitch"
@@ -78,13 +81,13 @@ def generate_cold_email(business_name: str, weaknesses_summary: str, persona=Non
         copywriter_rule = f"Pitch them B2B services. Your value prop is: {val_prop}"
         cta = "Would it be worth a quick 10-minute chat?"
 
-    system_prompt = f"""You are a professional copywriter sending a cold email.
+    system_prompt = f"""You are a professional copywriter sending a cold email to {first_name}.
 Your goal is to get a reply. Keep it extremely short (max {MAX_SENTENCES} sentences).
 Use a conversational, peer-to-peer tone. 
 
 CRITICAL RULES:
 1. The VERY FIRST LINE of your response must be exactly "Subject: [Your Subject Here]". Do not place a greeting before the subject line!
-2. The second line should be the body greeting.
+2. The second line should be the body greeting setting, specifically addressing {first_name}.
 3. End exactly with this soft CTA: "{cta}"
 4. {copywriter_rule}
 5. {strategy_context}

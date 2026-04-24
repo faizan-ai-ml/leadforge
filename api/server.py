@@ -14,7 +14,7 @@ import csv
 from fastapi.responses import StreamingResponse
 
 from database.db import init_db, SessionLocal
-from database.models import Campaign, Lead, SMTPConfig, EmailLog, UserPersona
+from database.models import Campaign, Lead, SMTPConfig, EmailLog, UserPersona, APIKeys
 import subprocess
 from output.smtp_sender import send_email_blast
 from ai.email_generator import generate_followup_email
@@ -55,6 +55,9 @@ class SMTPConfigRequest(BaseModel):
     port: int
     username: str
     password: str
+
+class APIKeysRequest(BaseModel):
+    hunter_api_key: str
 
 def advance_campaign_sequence(campaign_id: int, db: Session, smtp_config: dict):
     leads = db.query(Lead).filter(Lead.campaign_id == campaign_id, Lead.status == 'emailed').all()
@@ -188,6 +191,23 @@ def save_smtp_config(req: SMTPConfigRequest, db: Session = Depends(get_db_sessio
     config.password = req.password
     db.commit()
     return {"message": "SMTP configuration saved"}
+
+@app.get("/api/settings/keys")
+def get_api_keys(db: Session = Depends(get_db_session)):
+    keys = db.query(APIKeys).order_by(APIKeys.id.desc()).first()
+    if keys:
+        return {"hunter_api_key": keys.hunter_api_key or ""}
+    return {"hunter_api_key": ""}
+
+@app.post("/api/settings/keys")
+def save_api_keys(req: APIKeysRequest, db: Session = Depends(get_db_session)):
+    keys = db.query(APIKeys).order_by(APIKeys.id.desc()).first()
+    if not keys:
+        keys = APIKeys()
+        db.add(keys)
+    keys.hunter_api_key = req.hunter_api_key
+    db.commit()
+    return {"message": "API Keys saved"}
 
 @app.get("/api/campaigns")
 def list_campaigns(db: Session = Depends(get_db_session)):

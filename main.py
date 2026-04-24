@@ -7,7 +7,7 @@ from loguru import logger
 import yaml
 
 from database.db import init_db, get_db
-from database.models import Campaign, Lead, UserPersona
+from database.models import Campaign, Lead, UserPersona, APIKeys
 from scraper.google_maps import extract_google_maps_leads
 from scraper.website_scraper import scrape_website_html
 from scraper.screenshot import capture_screenshot
@@ -15,6 +15,7 @@ from auditor.rule_engine import audit_html
 from auditor.scorer import calculate_opportunity_score, format_audit_summary_for_ai
 from ai.email_generator import generate_cold_email
 from output.csv_writer import export_leads_to_csv
+from scraper.enrichment import find_decision_maker_email
 
 # Load Config
 with open("config.yaml", "r") as f:
@@ -36,6 +37,7 @@ async def process_campaign(niche: str, location: str, max_leads: int, pre_campai
     init_db()
     
     persona = None
+    hunter_api_key = ""
     if pre_campaign_id:
         campaign_id = pre_campaign_id
         logger.info(f"Using provided Campaign ID from API: {campaign_id}")
@@ -43,6 +45,8 @@ async def process_campaign(niche: str, location: str, max_leads: int, pre_campai
             camp = db.query(Campaign).filter(Campaign.id == campaign_id).first()
             if camp and camp.persona_id:
                 persona = db.query(UserPersona).filter(UserPersona.id == camp.persona_id).first()
+            keys = db.query(APIKeys).order_by(APIKeys.id.desc()).first()
+            if keys: hunter_api_key = keys.hunter_api_key
     else:
         with get_db() as db:
             if db:
@@ -51,6 +55,8 @@ async def process_campaign(niche: str, location: str, max_leads: int, pre_campai
                 db.commit()
                 db.refresh(campaign)
                 campaign_id = campaign.id
+                keys = db.query(APIKeys).order_by(APIKeys.id.desc()).first()
+                if keys: hunter_api_key = keys.hunter_api_key
             else:
                 campaign_id = None
                 logger.warning("Running without PostgreSQL connection. Data won't be saved to DB.")
@@ -100,9 +106,19 @@ async def process_campaign(niche: str, location: str, max_leads: int, pre_campai
             
             # Extract detected tech stack and scraped emails
             lead_data["tech_stack"] = findings["tech"]["stack"]
-            if not lead_data.get("email") and findings.get("contact", {}).get("emails"):
-                # Pick the highest priority email. Natively regex grabs anything, we just take the first valid one
-                # Usually info@ or contact@ shows up early in footers.
+            
+            # Phase 4.5: Deep Context Engine (Hunter.io Sniper)
+            enriched_contact = None
+            if hunter_api_key:
+                logger.info(f"  Sniping decision-makers via Hunter.io for {name}...")
+                persona_obj = persona.objective if persona else "b2b_agency"
+                enriched_contact = find_decision_maker_email(url, persona_obj, hunter_api_key)
+                
+            if enriched_contact:
+                lead_data["email"] = enriched_contact["email"]
+                lead_data["first_name"] = enriched_contact["first_name"]
+                logger.info(f"  🎯 SNIPE SUCCESS: Found {enriched_contact['position']} ({enriched_contact['first_name']}) at {enriched_contact['email']}")
+            elif not lead_data.get("email") and findings.get("contact", {}).get("emails"):
                 lead_data["email"] = findings["contact"]["emails"][0]
             
             # Phase 4b: Opportunity Scoring
@@ -116,7 +132,7 @@ async def process_campaign(niche: str, location: str, max_leads: int, pre_campai
             
             # Phase 5: AI Email Generation
             if lead_data.get("email") or True: # We generate it regardless, in case user finds email manually later
-                draft, angle = generate_cold_email(name, summary, persona)
+                draft, angle = generate_cold_email(name, summary, persona, lead_data.get("first_name"))
                 if draft:
                      lead_data["email_draft"] = draft
                      lead_data["pitch_angle_used"] = angle
